@@ -1,4 +1,6 @@
+
 import { useEffect, useMemo, useRef, useState } from "react";
+import Tooltip from "./Tooltip";
 
 
 type Severity = "error" | "warning" | "info";
@@ -20,6 +22,7 @@ type Proprs = {
     debounceMs?: number;
 }
 
+
 function Editor ({
     value,
     onChange,
@@ -31,7 +34,12 @@ function Editor ({
     const overlayRef = useRef<HTMLDivElement | null>(null);
     const [localValue, setLocalValue] =  useState(value);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+    const [tooltip, setTooltip] = useState<{
+        issue: Issue;
+        target: HTMLElement | null;
+    } | null>(null);
     const debounceTimer = useRef<number | null>(null);
+    
 
     useEffect(() => { setLocalValue(value); }, [value]);
 
@@ -65,14 +73,14 @@ function Editor ({
         schedulePropagate(v);
     };
 
-    const escapeHtml = (s: string) => 
-        s
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;")
-            .replace(/\n/g, "\n");
+    // const escapeHtml = (s: string) => 
+    //     s
+    //         .replace(/&/g, "&amp;")
+    //         .replace(/</g, "&lt;")
+    //         .replace(/>/g, "&gt;")
+    //         .replace(/"/g, "&quot;")
+    //         .replace(/'/g, "&#039;")
+    //         .replace(/\n/g, "\n");
     
 
     const normalized = useMemo(() => {
@@ -167,30 +175,40 @@ function Editor ({
         }
 
         const issue = normalized.find((it) => it.id === id);
-        if (issue && onInspect) {
-            onInspect(issue);
+        if (issue) {
+            if (onInspect) onInspect(issue);
+            setTooltip({
+                issue,
+                target,
+            });
         }
     };
 
     return (
-        <div className="editor-root">
-            <div className="editor-wrapper">
+        <div className="w-full relative">
+            <div className="relative w-full">
                 <textarea
                     ref={taRef}
-                    className="editor-textarea"
+                    className={
+                        [
+                            "relative w-full h-80 resize-y bg-transparent",
+                            "text-transparent caret-black z-20 p-4 border border-gray-200",
+                            "leading-6 font-sans whitespace-pre-wrap overflow-auto outline-none",
+                        ].join(" ")
+                    }
                     value={localValue}
                     onChange={onInput}
                     spellCheck={false}
                 />
                 <div
                     ref={overlayRef}
-                    className="editor-overlay"
+                    className="absolute inset-0 pointer-events-none z-10 p-4 overflow-auto"
                     onMouseOver={onOverlayMouseOver}
                     onMouseOut={onOverlayMouseOut}
                     onClick={onIssueClick}
                     aria-hidden="true"
                 >
-                    <pre className="overlay-pre" aria-hidden>
+                    <pre className="m-0 whitespace-pre-wrap wrap-break-word leading-6 text-sm font-sans text-gray-900">
                         {segments.map((s, idx) =>
                             s.issue ? (
                                 <span
@@ -198,21 +216,29 @@ function Editor ({
                                 data-issue-id={s.issue.id}
                                 data-start={s.start}
                                 data-end={s.end}
-                                className={`overlay-issue overlay-${s.issue.severity} ${
-                                    hoveredId === s.issue.id ? "overlay-hover" : ""
-                                }`}
+                                className={[
+                                    "pointer-events-auto rounded-px-1",
+                                    s.issue.severity === "error" ? "bg-red-50" : "",
+                                    s.issue.severity === "warning" ? "bg-yellow-50" : "",
+                                    s.issue.severity === "info" ? "bg-blue-50" : "",
+                                    hoveredId === s.issue.id ? "ring-2 ring-gray-300": "",
+                                ].join(" ")}
                                 >
-                                {escapeHtml(s.text)}
+                                {s.text}
                                 </span>
                             ) : (
-                                <span key={idx} className="overlay-normal">
-                                {escapeHtml(s.text)}
+                                <span key={idx} className="text-current">
+                                {s.text}
                                 </span>
                             )
                         )}
                     </pre>
                 </div>
             </div>
+
+            {tooltip && (
+                <Tooltip target={tooltip.target} text={tooltip.issue.message} onClose={() => setTooltip(null)} />
+            )}
         </div>
     );
 };
