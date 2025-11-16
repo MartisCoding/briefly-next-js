@@ -20,6 +20,11 @@ type Proprs = {
     issues: Issue[];
     onInspect?: (issue: Issue) => void;
     debounceMs?: number;
+
+    onLint?: (text: string) => void;
+    lintOnEnter?: boolean;
+    lintOnPause?: boolean;
+    lintPauseDelayMs?: number;
 }
 
 
@@ -29,6 +34,10 @@ function Editor ({
     issues,
     onInspect,
     debounceMs = 350,
+    onLint,
+    lintOnEnter = true,
+    // lintOnPause = false,
+    // lintPauseDelayMs = 1000,
 }: Proprs) {
     const taRef = useRef<HTMLTextAreaElement | null>(null);
     const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -39,7 +48,7 @@ function Editor ({
         target: HTMLElement | null;
     } | null>(null);
     const debounceTimer = useRef<number | null>(null);
-    
+    // const lintTimer = useRef<number | null>(null);
 
     useEffect(() => { setLocalValue(value); }, [value]);
 
@@ -58,6 +67,30 @@ function Editor ({
             ta.removeEventListener("scroll", onScroll);
         };
     }, []);
+
+    useEffect(() => {
+        if (!onLint || !lintOnEnter) return;
+
+        const ta = taRef.current;
+        if (!ta) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Enter" && !( e.shiftKey || e.ctrlKey || e.altKey || e.metaKey )) {
+                const text = ta.value;
+                const cursorPosition = ta.selectionStart;
+
+                const textBeforeCursor = text.slice(0, cursorPosition).trim();
+                if (textBeforeCursor) {
+                    onLint(textBeforeCursor);
+                }
+            }
+        };
+        ta.addEventListener("keydown", handleKeyDown);
+        return () => {
+            ta.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [onLint, lintOnEnter]);
+
 
     const schedulePropagate = (v: string) => {
         if (debounceTimer.current) window.clearTimeout(debounceTimer.current);
@@ -184,51 +217,56 @@ function Editor ({
         }
     };
 
+    const textStyles = "font-mono text-base leading-6 whitespace-pre-wrap break-words";
+
     return (
-        <div className="w-full relative">
-            <div className="relative w-full">
+        <div className="w-full h-full relative">
+            <div className="relative w-full h-full">
+                {/* Textarea - невидимый, но с курсором */}
                 <textarea
                     ref={taRef}
-                    className={
-                        [
-                            "relative w-full h-80 resize-y bg-transparent",
-                            "text-transparent caret-black z-20 p-4 border border-gray-200",
-                            "leading-6 font-sans whitespace-pre-wrap overflow-auto outline-none",
-                        ].join(" ")
-                    }
+                    className={`absolute inset-0 w-full h-full resize-none bg-transparent text-transparent caret-foreground z-20 p-4 border border-border rounded-lg overflow-auto outline-none ${textStyles}`}
                     value={localValue}
                     onChange={onInput}
                     spellCheck={false}
+                    style={{
+                        caretColor: 'var(--color-foreground)',
+                    }}
                 />
+                {/* Overlay - видимый текст с подсветкой */}
                 <div
                     ref={overlayRef}
-                    className="absolute inset-0 pointer-events-none z-10 p-4 overflow-auto"
+                    className={`absolute inset-0 pointer-events-none z-10 p-4 overflow-auto rounded-lg ${textStyles}`}
                     onMouseOver={onOverlayMouseOver}
                     onMouseOut={onOverlayMouseOut}
                     onClick={onIssueClick}
                     aria-hidden="true"
+                    style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                    }}
                 >
-                    <pre className="m-0 whitespace-pre-wrap wrap-break-word leading-6 text-sm font-sans text-gray-900">
+                    <pre className={`m-0 ${textStyles} text-foreground`}>
                         {segments.map((s, idx) =>
                             s.issue ? (
                                 <span
-                                key={idx}
-                                data-issue-id={s.issue.id}
-                                data-start={s.start}
-                                data-end={s.end}
-                                className={[
-                                    "pointer-events-auto rounded-px-1",
-                                    s.issue.severity === "error" ? "bg-red-50" : "",
-                                    s.issue.severity === "warning" ? "bg-yellow-50" : "",
-                                    s.issue.severity === "info" ? "bg-blue-50" : "",
-                                    hoveredId === s.issue.id ? "ring-2 ring-gray-300": "",
-                                ].join(" ")}
+                                    key={idx}
+                                    data-issue-id={s.issue.id}
+                                    data-start={s.start}
+                                    data-end={s.end}
+                                    className={[
+                                        "pointer-events-auto cursor-pointer rounded px-0.5",
+                                        s.issue.severity === "error" ? "bg-destructive/10 underline decoration-wavy decoration-destructive decoration-2" : "",
+                                        s.issue.severity === "warning" ? "bg-warning/10 underline decoration-wavy decoration-warning decoration-2" : "",
+                                        s.issue.severity === "info" ? "bg-primary/10 underline decoration-wavy decoration-primary decoration-2" : "",
+                                        hoveredId === s.issue.id ? "ring-2 ring-border" : "",
+                                    ].join(" ")}
                                 >
-                                {s.text}
+                                    {s.text}
                                 </span>
                             ) : (
-                                <span key={idx} className="text-current">
-                                {s.text}
+                                <span key={idx}>
+                                    {s.text}
                                 </span>
                             )
                         )}
@@ -237,7 +275,11 @@ function Editor ({
             </div>
 
             {tooltip && (
-                <Tooltip target={tooltip.target} text={tooltip.issue.message} onClose={() => setTooltip(null)} />
+                <Tooltip 
+                    target={tooltip.target} 
+                    text={tooltip.issue.message} 
+                    onClose={() => setTooltip(null)} 
+                />
             )}
         </div>
     );
