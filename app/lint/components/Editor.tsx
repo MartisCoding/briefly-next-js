@@ -217,7 +217,7 @@ function Editor ({
         }
     };
 
-    const textStyles = "font-mono text-base leading-6 whitespace-pre-wrap break-words";
+    const textStyles = "font-mono text-xl leading-6 whitespace-pre-wrap break-words ";
 
     return (
         <div className="w-full h-full relative">

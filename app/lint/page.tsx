@@ -33,7 +33,7 @@ export default function Lint() {
       {/* Backdrop - затемнение фона при открытом сайдбаре */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/10 z-20 top-[73px] backdrop-blur-[2px]"
+          className="fixed inset-0 bg-black/10 z-20 backdrop-blur-[2px]"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
