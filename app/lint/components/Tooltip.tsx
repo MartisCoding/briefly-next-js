@@ -22,9 +22,10 @@ export default function Tooltip({
             const rect = target.getBoundingClientRect();
             const ref = tooltipRef.current;
 
-            ref.style.top = `${rect.top + window.scrollY - 80}px`;
-            ref.style.left = `${rect.left + window.scrollX}px`;
-            ref.style.width = `${rect.width}px`;
+            ref.style.top = `${rect.top + window.scrollY - 8}px`;
+            ref.style.left = `${rect.left - window.scrollX + rect.width / 2}px`;
+            console.log("Tooltip position top:", ref.style.top);
+            console.log("Tooltip position left:", ref.style.left);
         }
 
         updatePosition();
@@ -73,7 +74,7 @@ export default function Tooltip({
     return createPortal(
         <div
             ref={tooltipRef}
-            className="absolute z-50 -translate-x-1/2 -translate-y-full rounded-xl bg-gray-900 px-3 py-2 text-sm text-white shadow-xl borer border-gray-700 max-w-sm"
+            className="absolute z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-card border border-border px-3 py-2 text-sm text-card-foreground shadow-lg min-w-max max-w-md backdrop-blur-sm"
             onClick={(e) => {e.stopPropagation()}}
         >
             <p className="leading-snug whitespace-pre-wrap">{text}</p>

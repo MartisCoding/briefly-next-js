@@ -10,7 +10,27 @@ export default function Lint() {
 
   const handleLint = async (textToLint: string) => {
     console.log("Linting:", textToLint);
-    // TODO: Implement API call
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ filter: "Info", text: textToLint }),
+      });
+      const data = await response.json();
+      const fetchedIssues: Issue[] = data.issues.map((issue: any, index: number) => ({
+        id: index,
+        message: issue.message,
+        severity: (issue.severity as string).toLowerCase() as Issue["severity"],
+        start: issue.start,
+        end: issue.end,
+      }));
+      console.log("Fetched issues:", fetchedIssues);
+      setIssues(fetchedIssues);
+    } catch (error) {
+      console.error("Error linting:", error);
+    }
   };
 
   return (
