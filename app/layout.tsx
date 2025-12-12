@@ -33,7 +33,7 @@ export default function RootLayout({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/api/auth/verify", {
+        const response = await fetch("/api/verify", {
           method: "GET",
           credentials: "include",
         });
