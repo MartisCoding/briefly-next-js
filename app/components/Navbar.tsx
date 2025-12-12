@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 
-export default function Navbar() {
+type Props = {
+  userName?: string;
+  onLogout?: () => void;
+};
+
+export default function Navbar({ userName, onLogout }: Props) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
-    { label: "Templates", href: "#" },
-    { label: "Examples", href: "#" },
-    { label: "Scoring", href: "#" },
-    { label: "Docs", href: "#" },
     { label: "Changelog", href: "#" },
     { label: "Feedback", href: "#" },
   ];
@@ -40,9 +41,27 @@ export default function Navbar() {
               ))}
             </div>
 
-            <button className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity">
-              Login
-            </button>
+            {/* Auth Section */}
+            {userName ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-foreground">
+                  {userName}
+                </span>
+                <button 
+                  onClick={onLogout}
+                  className="px-4 py-2 text-sm font-medium bg-muted text-muted-foreground rounded-lg hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link 
+                href="/login"
+                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -87,9 +106,28 @@ export default function Navbar() {
                 {item.label}
               </button>
             ))}
-            <button className="w-full px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity">
-              Login
-            </button>
+            
+            {/* Mobile Auth Section */}
+            {userName ? (
+              <div className="space-y-2 pt-2 border-t border-border">
+                <div className="px-4 py-2 text-sm font-medium text-foreground">
+                  {userName}
+                </div>
+                <button 
+                  onClick={onLogout}
+                  className="w-full px-4 py-2 text-sm font-medium bg-muted text-muted-foreground rounded-lg hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link 
+                href="/login"
+                className="block w-full px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity text-center"
+              >
+                Login
+              </Link>
+            )}
           </div>
         )}
       </div>

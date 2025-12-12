@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import Tooltip from "./Tooltip";
 
@@ -21,13 +20,7 @@ type Props = {
     issues: Issue[];
     onInspect?: (issue: Issue) => void;
     debounceMs?: number;
-
-    onLint?: (text: string) => void;
-    lintOnEnter?: boolean;
-    lintOnPause?: boolean;
-    lintPauseDelayMs?: number;
 }
-
 
 function Editor ({
     value,
@@ -35,10 +28,6 @@ function Editor ({
     issues,
     onInspect,
     debounceMs = 350,
-    onLint,
-    lintOnEnter = true,
-    // lintOnPause = false,
-    // lintPauseDelayMs = 1000,
 }: Props) {
     const taRef = useRef<HTMLTextAreaElement | null>(null);
     const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -147,30 +136,6 @@ function Editor ({
         };
     }, []);
 
-    useEffect(() => {
-        if (!onLint || !lintOnEnter) return;
-
-        const ta = taRef.current;
-        if (!ta) return;
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Enter" && !( e.shiftKey || e.ctrlKey || e.altKey || e.metaKey )) {
-                const text = ta.value;
-                const cursorPosition = ta.selectionStart;
-
-                const textBeforeCursor = text.slice(0, cursorPosition).trim();
-                if (textBeforeCursor) {
-                    onLint(textBeforeCursor);
-                }
-            }
-        };
-        ta.addEventListener("keydown", handleKeyDown);
-        return () => {
-            ta.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [onLint, lintOnEnter]);
-
-
     const schedulePropagate = (v: string) => {
         if (debounceTimer.current) window.clearTimeout(debounceTimer.current);
         debounceTimer.current = window.setTimeout(() => {
@@ -273,13 +238,11 @@ function Editor ({
 
     const onIssueClick = (e: React.MouseEvent) => {
         const target = e.target as HTMLElement | null;
-        console.log("Issue click target:", target);
         if (!target) return;
         const startAttr = target.getAttribute("data-start");
         const endAttr = target.getAttribute("data-end");
         const idAttr = target.getAttribute("data-issue-id");
         if (!startAttr || !endAttr || !idAttr) return;
-        console.log("Issue click attrs:", { startAttr, endAttr, idAttr });
         const start = parseInt(startAttr, 10);
         const end = parseInt(endAttr, 10);
         const id = parseInt(idAttr, 10);
@@ -290,9 +253,7 @@ function Editor ({
         }
 
         const issue = normalized.find((it) => it.id === id);
-        console.log("Found issue on click:", issue);
         if (issue) {
-            console.log("Clicked issue:", issue);
             if (onInspect) onInspect(issue);
             setTooltip({
                 issue,

@@ -7,9 +7,12 @@ export default function Lint() {
   const [text, setText] = useState("");
   const [issues, setIssues] = useState<Issue[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   const handleLint = async (textToLint: string) => {
-    console.log("Linting:", textToLint);
+    setIsLoading(true);
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -26,16 +29,41 @@ export default function Lint() {
         start: issue.start,
         end: issue.end,
       }));
-      console.log("Fetched issues:", fetchedIssues);
       setIssues(fetchedIssues);
     } catch (error) {
       console.error("Error linting:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClear = () => {
+    setIssues([]);
+  };
+
+  const handleCopyIssue = async (issue: Issue) => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(issue, null, 2));
+      setCopiedId(issue.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  const handleCopyAll = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(issues, null, 2));
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
     }
   };
 
   return (
     <div className="relative flex h-[calc(100vh-73px)] bg-background overflow-hidden">
-      {/* Main Editor Area - всегда на всю ширину */}
+      {/* Main Editor Area */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${
         isSidebarOpen ? "blur-sm brightness-75 pointer-events-none" : ""
       }`}>
@@ -44,13 +72,11 @@ export default function Lint() {
             value={text}
             onChange={setText}
             issues={issues}
-            onLint={handleLint}
-            lintOnEnter={true}
           />
         </div>
       </div>
 
-      {/* Backdrop - затемнение фона при открытом сайдбаре */}
+      {/* Backdrop */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/10 z-20 backdrop-blur-[2px]"
@@ -83,7 +109,7 @@ export default function Lint() {
         </svg>
       </button>
 
-      {/* Sidebar - поверх всего */}
+      {/* Sidebar */}
       <aside
         className={`fixed right-0 h-screen bg-card border-l border-border shadow-2xl transition-transform duration-300 ease-in-out z-30 ${
           isSidebarOpen ? "translate-x-0" : "translate-x-full"
@@ -93,14 +119,57 @@ export default function Lint() {
         <div className="h-full flex flex-col">
           {/* Sidebar Header */}
           <div className="p-6 border-b border-border">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">
-                Analysis Results
-              </h2>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                {issues.length} issues
-              </span>
+            <div className="flex items-center justify-between gap-4 mb-3">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  Analysis Results
+                </h2>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                  {issues.length} issues
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleLint(text)}
+                  className="px-3 py-1 rounded bg-accent text-accent-foreground border border-border hover:opacity-90 disabled:opacity-60 text-sm"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Running…" : "Run"}
+                </button>
+
+                <button
+                  onClick={handleClear}
+                  className="px-3 py-1 rounded bg-muted text-muted-foreground border border-border hover:opacity-90 text-sm"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
+
+            {/* Copy All Button */}
+            {issues.length > 0 && (
+              <button
+                onClick={handleCopyAll}
+                className="w-full mt-2 px-3 py-2 rounded bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors text-sm flex items-center justify-center gap-2"
+              >
+                {copiedAll ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy All as JSON
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Sidebar Content */}
@@ -110,7 +179,7 @@ export default function Lint() {
                 {issues.map((issue) => (
                   <div
                     key={issue.id}
-                    className={`p-4 rounded-lg border ${
+                    className={`p-4 rounded-lg border relative group ${
                       issue.severity === "error"
                         ? "bg-destructive/10 border-destructive/30"
                         : issue.severity === "warning"
@@ -118,7 +187,24 @@ export default function Lint() {
                         : "bg-primary/10 border-primary/30"
                     }`}
                   >
-                    <div className="font-medium text-sm mb-1 capitalize">
+                    {/* Copy Button */}
+                    <button
+                      onClick={() => handleCopyIssue(issue)}
+                      className="absolute top-2 right-2 p-1.5 rounded bg-background/50 hover:bg-background border border-border opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Copy as JSON"
+                    >
+                      {copiedId === issue.id ? (
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+
+                    <div className="font-medium text-sm mb-1 capitalize pr-8">
                       {issue.severity}
                     </div>
                     <div className="text-sm text-foreground">
@@ -151,7 +237,7 @@ export default function Lint() {
                   No issues found yet
                 </p>
                 <p className="text-muted-foreground text-xs mt-2">
-                  Start typing to analyze your text
+                  Use the Run button to analyze your text
                 </p>
               </div>
             )}
