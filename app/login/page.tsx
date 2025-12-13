@@ -74,6 +74,11 @@ const [loginPassword, setLoginPassword] = useState("");
     return checkPasswordStrength(registerPassword);
   }, [registerPassword]);
 
+  // isLoading || (loginUsername && !validateInput(loginUsername)) || (loginPassword && !validateInput(loginPassword))
+  const isLoginDisabled = isLoading || 
+    (!!loginUsername && !validateInput(loginUsername)) || 
+    (!!loginPassword && !validateInput(loginPassword));
+
   // Calculate password match using useMemo
   const passwordMatch = useMemo<boolean | null>(() => {
     if (!confirmPassword) return null;
@@ -95,6 +100,8 @@ const [loginPassword, setLoginPassword] = useState("");
         return;
       }
     }
+
+    
 
     // Validate register form
     if (activeTab === "register") {
@@ -271,7 +278,7 @@ const [loginPassword, setLoginPassword] = useState("");
 
                     <button
                       type="submit"
-                      disabled={isLoading || (loginUsername && !validateInput(loginUsername)) || (loginPassword && !validateInput(loginPassword))}
+                      disabled={isLoginDisabled}
                       className="w-full py-2 px-4 bg-black text-white rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading ? "Loading..." : "Login"}
