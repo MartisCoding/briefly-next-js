@@ -17,6 +17,7 @@ export default function Lint() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ filter: "Info", text: textToLint }),

@@ -32,34 +32,52 @@ export default function RootLayout({
 
   useEffect(() => {
     const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      
+      // Если нет токена и страница не публичная - редирект на логин
+      if (!token) {
+        if (!isPublicPage) {
+          router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Если есть токен - проверяем его валидность
       try {
         const response = await fetch("/api/verify", {
           method: "GET",
-          credentials: "include",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
         });
 
         if (response.ok) {
           const data = await response.json();
-          if (data.token && data.userName) {
-            setUserName(data.userName);
-            // Сохраняем токен в localStorage
-            localStorage.setItem("token", data.token);
+          
+          // Проверяем что получили имя пользователя
+          if (data.username) {
+            setUserName(data.username);
           } else {
-            // Токен не пришел
+            // Токен валиден, но нет имени - очищаем токен
+            localStorage.removeItem("token");
             if (!isPublicPage) {
-              router.push("/login");
+              router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
             }
           }
         } else {
-          // Ошибка авторизации
+          // Токен невалиден - очищаем и редиректим
+          localStorage.removeItem("token");
           if (!isPublicPage) {
-            router.push("/login");
+            router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
           }
         }
       } catch (error) {
         console.error("Auth check failed:", error);
+        // Ошибка при проверке - очищаем токен
+        localStorage.removeItem("token");
         if (!isPublicPage) {
-          router.push("/login");
+          router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
         }
       } finally {
         setIsLoading(false);
@@ -71,15 +89,27 @@ export default function RootLayout({
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", {
+      const token = localStorage.getItem("token");
+      await fetch("/api/logout", {
         method: "POST",
-        credentials: "include",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
       });
-      localStorage.removeItem("token");
-      setUserName(undefined);
-      router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
+      // Всегда очищаем токен и редиректим
+      localStorage.removeItem("token");
+      setUserName(undefined);
+      
+      // Если текущая страница не публичная - редирект на логин с сохранением пути
+      // Если публичная - остаемся на текущей странице
+      if (!isPublicPage) {
+        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      } else {
+        router.push("/login");
+      }
     }
   };
 

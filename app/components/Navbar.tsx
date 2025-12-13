@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 type Props = {
@@ -10,7 +11,7 @@ type Props = {
 
 export default function Navbar({ userName, onLogout }: Props) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  const path = usePathname();
   const navItems = [
     { label: "Changelog", href: "#" },
     { label: "Feedback", href: "#" },
@@ -122,7 +123,7 @@ export default function Navbar({ userName, onLogout }: Props) {
               </div>
             ) : (
               <Link 
-                href="/login"
+                href={"/login?redirect=" + encodeURIComponent(path)}
                 className="block w-full px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity text-center"
               >
                 Login

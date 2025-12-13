@@ -21,8 +21,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<FormType>("login");
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+  const [loginUsername, setLoginUsername] = useState(""); // было loginEmail
+const [loginPassword, setLoginPassword] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordStrength, setShowPasswordStrength] = useState(false);
@@ -90,7 +90,7 @@ export default function LoginPage() {
 
     // Validate login form
     if (activeTab === "login") {
-      if (!validateInput(loginEmail) || !validateInput(loginPassword)) {
+      if (!validateInput(loginUsername) || !validateInput(loginPassword)) {
         setIsLoading(false);
         return;
       }
@@ -99,9 +99,9 @@ export default function LoginPage() {
     // Validate register form
     if (activeTab === "register") {
       const email = formData.get("email") as string;
-      const name = formData.get("name") as string;
-      
-      if (!validateInput(email) || !validateInput(name) || !validateInput(registerPassword)) {
+      const username = formData.get("username") as string;
+
+      if (!validateInput(email) || !validateInput(username) || !validateInput(registerPassword)) {
         setIsLoading(false);
         return;
       }
@@ -118,8 +118,7 @@ export default function LoginPage() {
     }
     
     try {
-      const endpoint = activeTab === "login" ? "/api/login" : "/api/signin";
-      
+      const endpoint = activeTab === "login" ? "/api/login" : "/api/register";
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -220,23 +219,23 @@ export default function LoginPage() {
                 <div className="w-full flex-shrink-0 p-6">
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label htmlFor="login-email" className="block text-sm font-medium text-foreground mb-1">
-                        Email
+                      <label htmlFor="login-username" className="block text-sm font-medium text-foreground mb-1">
+                        Username
                       </label>
                       <input
-                        id="login-email"
-                        name="email"
-                        type="email"
+                        id="login-username"
+                        name="username"
+                        type="text"
                         required
                         disabled={isLoading}
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
+                        value={loginUsername}
+                        onChange={(e) => setLoginUsername(e.target.value)}
                         className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 ${
-                          loginEmail && !validateInput(loginEmail) ? "border-red-500" : "border-border"
+                          loginUsername && !validateInput(loginUsername) ? "border-red-500" : "border-border"
                         }`}
-                        placeholder="your@email.com"
+                        placeholder="johndoe"
                       />
-                      {loginEmail && !validateInput(loginEmail) && (
+                      {loginUsername && !validateInput(loginUsername) && (
                         <p className="text-xs text-red-500 mt-1">Invalid characters detected</p>
                       )}
                     </div>
@@ -272,7 +271,7 @@ export default function LoginPage() {
 
                     <button
                       type="submit"
-                      disabled={isLoading || (loginEmail && !validateInput(loginEmail)) || (loginPassword && !validateInput(loginPassword))}
+                      disabled={isLoading || (loginUsername && !validateInput(loginUsername)) || (loginPassword && !validateInput(loginPassword))}
                       className="w-full py-2 px-4 bg-black text-white rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading ? "Loading..." : "Login"}
@@ -289,7 +288,7 @@ export default function LoginPage() {
                       </label>
                       <input
                         id="register-name"
-                        name="name"
+                        name="username"
                         type="text"
                         required
                         disabled={isLoading}
